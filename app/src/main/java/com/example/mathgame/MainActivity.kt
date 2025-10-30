@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,53 +41,124 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { MainLayout() }
+        setContent {
+            MainLayout()
+        }
     }
+}
+
+enum class Screen {
+    Start,
+    Play,
+    GameOver
 }
 
 @Composable
 @Preview
 fun MainLayout() {
 
-    var isPlaying by remember { mutableStateOf(false) }
+    var currentScreen by remember { mutableStateOf(Screen.Start) }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color.Yellow
+    ) {
+        when (currentScreen) {
+            Screen.Start -> StartScreen(
+                onStartClicked = { currentScreen = Screen.Play }
+            )
+
+            Screen.Play -> PlayScreen(
+                onGameOver = { currentScreen = Screen.GameOver },
+                onGoBack = { currentScreen = Screen.Start }
+            )
+
+            Screen.GameOver -> GameOverScreen(
+                onRestart = { currentScreen = Screen.Start }
+            )
+        }
+    }
+}
+
+@Composable
+fun PlayScreen(
+    onGameOver: () -> Unit,
+    onGoBack: () -> Unit
+) {
+
     var backColor by remember { mutableStateOf(Color.Yellow) }
+
+        var score by remember { mutableIntStateOf(0) }
+        var strikes by remember { mutableIntStateOf(0) }
+
     Surface(
         color = backColor,
         modifier = Modifier
             .fillMaxSize()
     ) {
+
+        Text(
+            text = "Score: $score",
+            fontSize = 24.sp,
+            modifier = Modifier.padding(start = 16.dp, top = 64.dp)
+        )
+
+        Text(
+            text = "Strikes: $strikes",
+            fontSize = 24.sp,
+            modifier = Modifier.padding(start = 16.dp, top = 120.dp)
+        )
+
         Column(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize()
+        ) {
+
+            Button(
+                onClick = {
+
+                }
             ) {
-            if(isPlaying){
-                PlayScreen()
-            }else {
-                StartScreen(onStartClicked = {isPlaying = true})
+                Text(
+                    text = "Restart"
+                )
+            }
+
+            Spacer(modifier = Modifier.size(48.dp))
+            Text("Tap the Larger Number!", fontSize = 32.sp)
+            Spacer(modifier = Modifier.size(48.dp))
+
+            Button(
+                onClick = {
+
+                }
+            ) {
+                Text("Back to Start")
             }
         }
-
     }
 }
-
-
 @Composable
-fun PlayScreen(){
-    Surface(
-        color = Color.Red
-    ) {
+fun GameOverScreen(onRestart: () -> Unit) {
+
+    Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
         Column(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
-            )
-        {
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Text("Game Over!", color = Color.White, fontSize = 32.sp)
 
+            Spacer(modifier = Modifier.size(24.dp))
+
+            Button(onClick = { onRestart() }) {
+                Text("Restart")
+            }
         }
     }
-
 }
+
 @Composable
 fun StartScreen(onStartClicked: () -> Unit) {
 
@@ -95,7 +168,7 @@ fun StartScreen(onStartClicked: () -> Unit) {
     ) {
         Button(
             onClick = {
-                onStartClicked
+                onStartClicked()
             }
         ) {
             Text(
@@ -110,22 +183,21 @@ fun StartScreen(onStartClicked: () -> Unit) {
 
         Spacer(modifier = Modifier.size(32.dp))
 
-            Surface (
+        Surface(
+            modifier = Modifier
+                .size(width = 300.dp, height = 200.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .border(BorderStroke(4.dp, Color.Red)),
+
+            ) {
+            Image(
+                painter = painterResource(R.drawable.launchimage),
+                contentDescription = "start",
                 modifier = Modifier
-                    .size(width = 300.dp, height = 200.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .border(BorderStroke(4.dp, Color.Red)),
-
-            ){
-                Image(
-                    painter = painterResource(R.drawable.launchimage),
-                    contentDescription = "start",
-                    modifier = Modifier
-                        .fillMaxSize()
+                    .fillMaxSize()
 
 
-                )
-            }
-
+            )
+        }
     }
 }
