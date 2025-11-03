@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -82,90 +84,139 @@ fun PlayScreen(
     onGameOver: () -> Unit,
     onGoBack: () -> Unit
 ) {
+    val ctx = LocalContext.current
 
     var backColor by remember { mutableStateOf(Color.Yellow) }
+    var score by remember { mutableIntStateOf(0) }
+    var strikes by remember { mutableIntStateOf(0) }
 
-        var score by remember { mutableIntStateOf(0) }
-        var strikes by remember { mutableIntStateOf(0) }
+    var scoreColor by remember { mutableStateOf(Color.Black) }
+    var strikeColor by remember { mutableStateOf(Color.Black) }
+
+    var instruction by remember { mutableStateOf("Tap the Larger Number!") }
+    var gameEnded by remember { mutableStateOf(false) }
+    var won by remember { mutableStateOf(false) }
+
+    var numA by remember { mutableIntStateOf(Random.nextInt(1, 100)) }
+    var numB by remember { mutableIntStateOf(Random.nextInt(1, 100)) }
+
+    fun newPair() {
+        numA = Random.nextInt(1, 100)
+        numB = Random.nextInt(1, 100)
+    }
+
+    fun endGame(didWin: Boolean) {
+        gameEnded = true
+        won = didWin
+        backColor = Color.Yellow
+        instruction = "Tap restart to play again!"
+        if (didWin) {
+            scoreColor = Color(0xFF2E7D32)
+            strikeColor = Color.Black
+            Toast.makeText(ctx, "Congrats, you won!", Toast.LENGTH_SHORT).show()
+        } else {
+            strikeColor = Color(0xFFB71C1C)
+            scoreColor = Color.Black
+            Toast.makeText(ctx, "Sorry, you lost", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun handleTap(isCorrect: Boolean) {
+        if (gameEnded) return
+        if (isCorrect) {
+            score += 1
+            scoreColor = Color.Yellow
+            strikeColor = Color.Black
+            backColor = Color(0xFF66BB6A)
+            if (score >= 10) {
+                endGame(true)
+                return
+            }
+        } else {
+            strikes += 1
+            strikeColor = Color.Yellow
+            scoreColor = Color.Black
+            backColor = Color(0xFFEF5350)
+            if (strikes >= 3) {
+                endGame(false)
+                return
+            }
+        }
+        newPair()
+    }
+
+    fun restart() {
+        score = 0
+        strikes = 0
+        scoreColor = Color.Black
+        strikeColor = Color.Black
+        backColor = Color.Yellow
+        instruction = "Tap the Larger Number!"
+        gameEnded = false
+        won = false
+        newPair()
+    }
 
     Surface(
         color = backColor,
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
-
         Text(
             text = "Score: $score",
             fontSize = 24.sp,
+            color = scoreColor,
             modifier = Modifier.padding(start = 16.dp, top = 64.dp)
         )
-
         Text(
             text = "Strikes: $strikes",
             fontSize = 24.sp,
-            modifier = Modifier.padding(start = 16.dp, top = 120.dp)
+            color = strikeColor,
+            modifier = Modifier.padding(start = 16.dp, top = 110.dp)
         )
-
         Column(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize()
         ) {
+            Button(onClick = { restart() }) {
+                Text("Restart")
+            }
+            Spacer(modifier = Modifier.size(16.dp))
 
-            Button(
-                onClick = {
+            Text(instruction, fontSize = 32.sp)
+            Spacer(modifier = Modifier.size(48.dp))
 
+            if (!gameEnded) {
+                NumBox(Color(0xFF90D3F1), numA) {
+                    handleTap(numA >= numB)
                 }
-            ) {
-                Text(
-                    text = "Restart"
-                )
+                Spacer(modifier = Modifier.size(48.dp))
+                NumBox(Color(0xFFFFB342), numB) {
+                    handleTap(numB >= numA)
+                }
+                Spacer(modifier = Modifier.size(48.dp))
             }
-
-            Spacer(modifier = Modifier.size(48.dp))
-            Text("Tap the Larger Number!", fontSize = 32.sp)
-            Spacer(modifier = Modifier.size(48.dp))
-
-            var greater by remember { mutableStateOf(Random.nextInt(1,100))}
-            var lesser by remember { mutableStateOf(Random.nextInt(1,100))}
-            var temp by remember { mutableStateOf(0) }
-
-            if (greater <= lesser){
-                temp = greater
-                greater = lesser
-                lesser = temp
-            }
-            NumBox(Color(0xFF90D3F1), greater, lesser)
-            Spacer(modifier = Modifier.size(48.dp))
-            NumBox(Color(0xFFFFB342), lesser, lesser)
-
         }
     }
 }
 
 @Composable
-fun NumBox(color: Color, random:Int, lesser: Int) {
-
+fun NumBox(color: Color, number: Int, onClick: () -> Unit) {
     Surface(
-        modifier = Modifier.size(150.dp)
-            .clickable(
-                onClick = {
-                    if(random < lesser){
-
-                    }
-                }
-            ),
-        color = color,
+        modifier = Modifier
+            .size(150.dp)
+            .clickable { onClick() },
+        color = color
     ) {
         Column(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize()
         ) {
-         Text(
-               text = "$random",
-               fontSize = 64.sp
-         )
+            Text(
+                text = "$number",
+                fontSize = 64.sp
+            )
         }
     }
 }
